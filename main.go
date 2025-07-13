@@ -34,6 +34,7 @@ func main() {
 	database.InitDB()
 
 	http.HandleFunc("/subscribe", enableCORS(handlers.SubscribeHandler))
+	http.HandleFunc("/unsubscribe", enableCORS(handlers.UnsubscribeHandler))
 	http.HandleFunc("/send", enableCORS(handlers.SendHandler(database.DB)))
 
 	log.Println("Listening on :9000")

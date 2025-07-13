@@ -11,6 +11,10 @@
 
 <p style="margin: 0 0 8px 0; color: #555;">If you found this useful, share it with someone who builds.</p>
 
+<p style="margin: 0; color: #555; font-size: 13px;">
+<a href="https://pixperk.tech/?unsubscribe=true" target="_blank" style="color: #999; text-decoration: none; font-weight: 400;">Unsubscribe</a>
+</p>
+
 
 <p style="font-size: 12px; color: #999; margin-top: 24px; font-weight: 400;">
 © 2025 Yashaswi - All bytes reserved.

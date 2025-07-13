@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/joho/godotenv"
 	database "github.com/pixperk/newsletter/db"
@@ -29,10 +31,48 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// HealthCheckResponse represents the health check response structure
+type HealthCheckResponse struct {
+	Status    string    `json:"status"`
+	Timestamp time.Time `json:"timestamp"`
+	Service   string    `json:"service"`
+	Version   string    `json:"version"`
+	Database  string    `json:"database"`
+	Uptime    string    `json:"uptime"`
+}
+
+var startTime = time.Now()
+
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	dbStatus := "healthy"
+	if err := database.DB.Ping(); err != nil {
+		dbStatus = "unhealthy"
+		w.WriteHeader(http.StatusServiceUnavailable)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	uptime := time.Since(startTime).Round(time.Second)
+
+	response := HealthCheckResponse{
+		Status:    "ok",
+		Timestamp: time.Now(),
+		Service:   "newsletter-api",
+		Version:   "1.0.0",
+		Database:  dbStatus,
+		Uptime:    uptime.String(),
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	godotenv.Load()
 	database.InitDB()
 
+	http.HandleFunc("/health", enableCORS(HealthCheckHandler))
 	http.HandleFunc("/subscribe", enableCORS(handlers.SubscribeHandler))
 	http.HandleFunc("/unsubscribe", enableCORS(handlers.UnsubscribeHandler))
 	http.HandleFunc("/send", enableCORS(handlers.SendHandler(database.DB)))

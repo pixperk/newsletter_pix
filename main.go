@@ -76,6 +76,7 @@ func main() {
 	http.HandleFunc("/subscribe", enableCORS(handlers.SubscribeHandler))
 	http.HandleFunc("/unsubscribe", enableCORS(handlers.UnsubscribeHandler))
 	http.HandleFunc("/send", enableCORS(handlers.SendHandler(database.DB)))
+	http.HandleFunc("/test-send", enableCORS(handlers.TestSendHandler))
 
 	log.Println("Listening on :9000")
 	http.ListenAndServe(":9000", nil)

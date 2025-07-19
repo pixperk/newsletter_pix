@@ -1,21 +1,30 @@
 package utils
 
 import (
-	"github.com/gomarkdown/markdown"
-	"github.com/gomarkdown/markdown/html"
-	"github.com/gomarkdown/markdown/parser"
+	"bytes"
+
+	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 func MarkdownToHTML(md string) string {
-	// Create parser with extensions to handle HTML better
-	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
-	p := parser.NewWithExtensions(extensions)
+	var buf bytes.Buffer
 
-	// Create HTML renderer that allows raw HTML
-	htmlFlags := html.CommonFlags | html.HrefTargetBlank
-	opts := html.RendererOptions{Flags: htmlFlags}
-	renderer := html.NewRenderer(opts)
+	goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM, // GitHub flavored markdown
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("monokai"), // or "monokai", "github", etc.
+			),
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithXHTML(),
+			html.WithUnsafe(), // allow raw HTML in markdown
+		),
+	).Convert([]byte(md), &buf)
 
-	html := markdown.ToHTML([]byte(md), p, renderer)
-	return string(html)
+	return buf.String()
 }

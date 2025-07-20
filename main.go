@@ -37,7 +37,6 @@ type HealthCheckResponse struct {
 	Timestamp time.Time `json:"timestamp"`
 	Service   string    `json:"service"`
 	Version   string    `json:"version"`
-	Database  string    `json:"database"`
 	Uptime    string    `json:"uptime"`
 }
 
@@ -46,14 +45,6 @@ var startTime = time.Now()
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbStatus := "healthy"
-	if err := database.DB.Ping(); err != nil {
-		dbStatus = "unhealthy"
-		w.WriteHeader(http.StatusServiceUnavailable)
-	} else {
-		w.WriteHeader(http.StatusOK)
-	}
-
 	uptime := time.Since(startTime).Round(time.Second)
 
 	response := HealthCheckResponse{
@@ -61,7 +52,6 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 		Service:   "newsletter-api",
 		Version:   "1.0.0",
-		Database:  dbStatus,
 		Uptime:    uptime.String(),
 	}
 

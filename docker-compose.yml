@@ -1,19 +1,22 @@
+version: '3.8'
+
 services:
- 
-
-  postgres:
-    image: postgres:16
-    container_name: newsletter-db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: newsletter
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+  newsletter-api:
+    build: .
+    container_name: newsletter-api
+    restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "9000:9000"
+    environment:
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - BREVO_SENDER_EMAIL=${BREVO_SENDER_EMAIL}
+      - DATABASE_URL=${DATABASE_URL}
+      - SEND_SECRET=${SEND_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PORT=9000
+    networks:
+      - newsletter-network
 
-
-volumes:
-  pgdata:
+networks:
+  newsletter-network:
+    driver: bridge

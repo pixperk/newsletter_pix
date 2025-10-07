@@ -1,0 +1,45 @@
+# Ignore build artifacts
+newsletter-api
+bin/
+*.exe
+
+# Ignore development files
+.env
+.env.local
+.env.development
+.env.test
+
+# Ignore version control
+.git
+.gitignore
+
+# Ignore documentation
+README.md
+CLI-README.md
+*.md
+!footer.md
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore logs
+*.log
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore test files
+*_test.go
+test/
+tests/
+
+# Ignore build scripts
+build-cli.sh
+build-cli.bat
+
+# Ignore sample files
+sample-newsletter.md

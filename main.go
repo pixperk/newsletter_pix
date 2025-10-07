@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -68,6 +69,11 @@ func main() {
 	http.HandleFunc("/send", enableCORS(handlers.SendHandler(database.DB)))
 	http.HandleFunc("/test-send", enableCORS(handlers.TestSendHandler))
 
-	log.Println("Listening on :9000")
-	http.ListenAndServe(":9000", nil)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Listening on :%s", port)
+	http.ListenAndServe(":"+port, nil)
 }

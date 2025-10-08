@@ -65,13 +65,15 @@ func main() {
 
 	http.HandleFunc("/health", enableCORS(HealthCheckHandler))
 	http.HandleFunc("/subscribe", enableCORS(handlers.SubscribeHandler))
+	http.HandleFunc("/subscribe/verify", enableCORS(handlers.VerifySubscribeHandler))
+	http.HandleFunc("/subscribe/confirm", enableCORS(handlers.VerifyConfirmHandler))
 	http.HandleFunc("/unsubscribe", enableCORS(handlers.UnsubscribeHandler))
 	http.HandleFunc("/send", enableCORS(handlers.SendHandler(database.DB)))
 	http.HandleFunc("/test-send", enableCORS(handlers.TestSendHandler))
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "9000"
 	}
 
 	log.Printf("Listening on :%s", port)

@@ -70,7 +70,7 @@ func TestSendHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Send email to test recipient
 	if err := utils.SendEmail(testRecipient, req.Subject, htmlBody); err != nil {
-		sendJSONTestSendResponse(w, http.StatusInternalServerError, false, "", "Failed to send test email")
+		sendJSONTestSendResponse(w, http.StatusInternalServerError, false, "", "Failed to send test email: "+err.Error())
 		return
 	}
 

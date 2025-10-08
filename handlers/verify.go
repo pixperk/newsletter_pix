@@ -111,7 +111,7 @@ func VerifySubscribeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create verification email content
-	verificationURL := fmt.Sprintf("http://localhost:8080?verify=%s", token)
+	verificationURL := fmt.Sprintf("https://pixperk.tech?verify=%s", token)
 
 	emailSubject := "Verify your newsletter subscription"
 	emailBody := fmt.Sprintf(`

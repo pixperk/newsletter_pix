@@ -270,7 +270,7 @@ This project uses the following third-party dependencies:
   <span style="font-weight: 500; color: #444;">Yashaswi</span><br/>
   <em style="color: #666;">Backend Developer • <a href="https://www.pixperk.tech" target="_blank" style="color: #0066cc; text-decoration: none; font-weight: 500;">pixperk.tech</a></em><br/>
 
-  <a href="https://twitter.com/pixperk_" target="_blank" style="color: #1DA1F2; text-decoration: none; font-size: 14px;">🐦 @pixperk_</a>
+  <a href="https://twitter.com/pixperk_" target="_blank" style="color: #1DA1F2; text-decoration: none; font-size: 14px;">🐦 @pixperk</a>
 
   <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;" />
 

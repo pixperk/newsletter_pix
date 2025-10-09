@@ -3,9 +3,11 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pixperk/newsletter/utils"
 )
@@ -124,11 +126,46 @@ func SendHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		// Send emails with proper error tracking
+		successCount := 0
+		errorCount := 0
+		var errors []string
+
+		// Use a channel to collect results from goroutines
+		type result struct {
+			email string
+			err   error
+		}
+		resultChan := make(chan result, len(emails))
+
 		// Send emails asynchronously
 		for _, email := range emails {
-			go utils.SendEmail(email, req.Subject, htmlBody)
+			go func(email string) {
+				err := utils.SendEmail(email, req.Subject, htmlBody)
+				resultChan <- result{email: email, err: err}
+			}(email)
 		}
 
-		sendJSONSendResponse(w, http.StatusOK, true, "Newsletter sent successfully! 🚀", "", subscriberCount, subscriberCount)
+		// Collect results
+		for i := 0; i < len(emails); i++ {
+			res := <-resultChan
+			if res.err != nil {
+				errorCount++
+				errors = append(errors, fmt.Sprintf("Failed to send to %s: %v", res.email, res.err))
+			} else {
+				successCount++
+			}
+		}
+
+		// Prepare response based on results
+		if errorCount == 0 {
+			sendJSONSendResponse(w, http.StatusOK, true, "Newsletter sent successfully to all subscribers! 🚀", "", successCount, subscriberCount)
+		} else if successCount > 0 {
+			errorMessage := fmt.Sprintf("Partial success: %d sent, %d failed. Errors: %s", successCount, errorCount, strings.Join(errors, "; "))
+			sendJSONSendResponse(w, http.StatusPartialContent, true, "Newsletter partially sent", errorMessage, successCount, subscriberCount)
+		} else {
+			errorMessage := fmt.Sprintf("All emails failed to send. Errors: %s", strings.Join(errors, "; "))
+			sendJSONSendResponse(w, http.StatusInternalServerError, false, "", errorMessage, successCount, subscriberCount)
+		}
 	}
 }

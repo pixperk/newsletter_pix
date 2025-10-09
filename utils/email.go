@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 )
@@ -52,12 +53,29 @@ func SendEmail(to, subject, htmlBody string) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send request to Brevo: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Read response body for detailed error information
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read Brevo response: %w", err)
+	}
+
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("brevo failed: %s", resp.Status)
+		// Try to parse Brevo error response
+		var brevoError struct {
+			Message string `json:"message"`
+			Code    string `json:"code"`
+		}
+
+		if json.Unmarshal(body, &brevoError) == nil && brevoError.Message != "" {
+			return fmt.Errorf("brevo API error (%s): %s", resp.Status, brevoError.Message)
+		}
+
+		// Fallback to status and raw body if parsing fails
+		return fmt.Errorf("brevo API error (%s): %s", resp.Status, string(body))
 	}
 
 	return nil

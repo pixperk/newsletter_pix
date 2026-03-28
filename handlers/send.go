@@ -49,6 +49,8 @@ func SendHandler(db *sql.DB) http.HandlerFunc {
 			htmlBody += footerHTML
 		}
 
+		htmlBody = utils.WrapInTemplate(req.Subject, htmlBody)
+
 		rows, err := db.Query(`SELECT email FROM subscribers`)
 		if err != nil {
 			SendJSON(w, http.StatusInternalServerError, JSONResponse{Error: "Database error occurred"})

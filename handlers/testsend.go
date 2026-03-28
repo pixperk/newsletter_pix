@@ -47,6 +47,8 @@ func TestSendHandler(w http.ResponseWriter, r *http.Request) {
 		htmlBody += "<br>" + footerHTML
 	}
 
+	htmlBody = utils.WrapInTemplate(req.Subject, htmlBody)
+
 	if err := utils.SendEmail(testRecipient, req.Subject, htmlBody); err != nil {
 		SendJSON(w, http.StatusInternalServerError, JSONResponse{Error: "Failed to send test email: " + err.Error()})
 		return

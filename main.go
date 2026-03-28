@@ -13,21 +13,28 @@ import (
 )
 
 // CORS middleware to handle cross-origin requests
+var allowedOrigins = map[string]bool{
+	"https://pixperk.tech":     true,
+	"https://www.pixperk.tech": true,
+	"http://localhost:8080":    true,
+}
+
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Secret")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 
-		// Handle preflight OPTIONS request
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		// Call the next handler
 		next(w, r)
 	}
 }

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -12,11 +15,20 @@ import (
 	"github.com/pixperk/newsletter/handlers"
 )
 
-// CORS middleware to handle cross-origin requests
 var allowedOrigins = map[string]bool{
 	"https://pixperk.tech":     true,
 	"https://www.pixperk.tech": true,
-	"http://localhost:8080":    true,
+}
+
+const maxBodySize = 1 << 20 // 1 MB
+
+func securityHeaders(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+		next(w, r)
+	}
 }
 
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
@@ -39,6 +51,17 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func limitBody(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+		next(w, r)
+	}
+}
+
+func wrap(h http.HandlerFunc, rl *handlers.RateLimiter) http.HandlerFunc {
+	return securityHeaders(enableCORS(limitBody(handlers.RateLimitMiddleware(rl)(h))))
+}
+
 // HealthCheckResponse represents the health check response structure
 type HealthCheckResponse struct {
 	Status    string    `json:"status"`
@@ -51,24 +74,23 @@ type HealthCheckResponse struct {
 
 var startTime = time.Now()
 
-// HealthCheckHandler handles health check requests
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// Check database connection
 	dbStatus := "healthy"
+	status := "ok"
 	if err := database.DB.Ping(); err != nil {
 		dbStatus = "unhealthy"
+		status = "degraded"
 		w.WriteHeader(http.StatusServiceUnavailable)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	// Calculate uptime
 	uptime := time.Since(startTime).Round(time.Second)
 
 	response := HealthCheckResponse{
-		Status:    "ok",
+		Status:    status,
 		Timestamp: time.Now(),
 		Service:   "newsletter-api",
 		Version:   "1.0.0",
@@ -79,38 +101,58 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func PingHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "pong"})
+}
+
 func main() {
 	godotenv.Load()
 	database.InitDB()
+	defer database.DB.Close()
 
-	// Create rate limiters for different endpoints
-	// Email endpoints: 5 requests per 15 minutes per IP
 	emailRateLimit := handlers.NewRateLimiter(5, 15*time.Minute)
-
-	// General endpoints: 100 requests per 15 minutes per IP
 	generalRateLimit := handlers.NewRateLimiter(100, 15*time.Minute)
-
-	// Admin endpoints (send): 10 requests per hour per IP
 	adminRateLimit := handlers.NewRateLimiter(10, 1*time.Hour)
 
-	// Apply rate limiting to routes
-	http.HandleFunc("/health", enableCORS(handlers.RateLimitMiddleware(generalRateLimit)(HealthCheckHandler)))
-	http.HandleFunc("/subscribe", enableCORS(handlers.RateLimitMiddleware(emailRateLimit)(handlers.SubscribeHandler)))
-	http.HandleFunc("/subscribe/verify", enableCORS(handlers.RateLimitMiddleware(emailRateLimit)(handlers.VerifySubscribeHandler)))
-	http.HandleFunc("/subscribe/confirm", enableCORS(handlers.RateLimitMiddleware(emailRateLimit)(handlers.VerifyConfirmHandler)))
-	http.HandleFunc("/unsubscribe", enableCORS(handlers.RateLimitMiddleware(emailRateLimit)(handlers.UnsubscribeHandler)))
-	http.HandleFunc("/send", enableCORS(handlers.RateLimitMiddleware(adminRateLimit)(handlers.SendHandler(database.DB))))
-	http.HandleFunc("/test-send", enableCORS(handlers.RateLimitMiddleware(adminRateLimit)(handlers.TestSendHandler)))
+	http.HandleFunc("/ping", wrap(PingHandler, generalRateLimit))
+	http.HandleFunc("/health", wrap(HealthCheckHandler, generalRateLimit))
+	http.HandleFunc("/subscribe", wrap(handlers.SubscribeHandler, emailRateLimit))
+	http.HandleFunc("/subscribe/verify", wrap(handlers.VerifySubscribeHandler, emailRateLimit))
+	http.HandleFunc("/subscribe/confirm", wrap(handlers.VerifyConfirmHandler, emailRateLimit))
+	http.HandleFunc("/unsubscribe", wrap(handlers.UnsubscribeHandler, emailRateLimit))
+	http.HandleFunc("/send", wrap(handlers.SendHandler(database.DB), adminRateLimit))
+	http.HandleFunc("/test-send", wrap(handlers.TestSendHandler, adminRateLimit))
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	log.Printf("Listening on :%s", port)
-	log.Printf("Rate limiting enabled:")
-	log.Printf("- Email endpoints: 5 requests per 15 minutes per IP")
-	log.Printf("- General endpoints: 100 requests per 15 minutes per IP")
-	log.Printf("- Admin endpoints: 10 requests per hour per IP")
-	http.ListenAndServe(":"+port, nil)
+	srv := &http.Server{
+		Addr:         ":" + port,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	go func() {
+		log.Printf("Listening on :%s", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+	log.Println("Server stopped gracefully")
 }

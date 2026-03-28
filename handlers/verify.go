@@ -10,6 +10,7 @@ import (
 	"time"
 
 	database "github.com/pixperk/newsletter/db"
+	"github.com/pixperk/newsletter/utils"
 )
 
 type VerifySubscribeRequest struct {

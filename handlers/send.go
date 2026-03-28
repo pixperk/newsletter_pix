@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pixperk/newsletter/utils"
 )
@@ -138,5 +140,6 @@ func loadFooterHTML() string {
 	if err != nil {
 		return ""
 	}
-	return "<br>" + utils.MarkdownToHTML(string(footerContent))
+	content := strings.ReplaceAll(string(footerContent), "{{YEAR}}", strconv.Itoa(time.Now().Year()))
+	return "<br>" + utils.MarkdownToHTML(content)
 }

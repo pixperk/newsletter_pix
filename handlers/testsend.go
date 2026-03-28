@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pixperk/newsletter/utils"
 )
@@ -41,7 +44,8 @@ func TestSendHandler(w http.ResponseWriter, r *http.Request) {
 
 	footerHTML := ""
 	if f, err := os.ReadFile("footer.md"); err == nil {
-		footerHTML = utils.MarkdownToHTML(string(f))
+		content := strings.ReplaceAll(string(f), "{{YEAR}}", strconv.Itoa(time.Now().Year()))
+		footerHTML = utils.MarkdownToHTML(content)
 	}
 	if footerHTML != "" {
 		htmlBody += "<br>" + footerHTML

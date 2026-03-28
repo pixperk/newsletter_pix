@@ -21,7 +21,7 @@
   </p>
 
   <p style="font-size: 12px; color: #999; margin-top: 24px; font-weight: 400;">
-    © 2025 Yashaswi – All bytes reserved.
+    © {{YEAR}} Yashaswi – All bytes reserved.
   </p>
 
 </div>

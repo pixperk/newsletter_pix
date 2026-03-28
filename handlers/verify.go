@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -85,57 +86,89 @@ func VerifySubscribeHandler(w http.ResponseWriter, r *http.Request) {
 
 	verificationURL := fmt.Sprintf("https://pixperk.tech?verify=%s", token)
 
+	year := strconv.Itoa(time.Now().Year())
 	emailSubject := "Verify your newsletter subscription"
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 0;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <style media="all" type="text/css">
+    @media only screen and (max-width: 640px) {
+      .container { padding: 8px !important; width: 100%% !important; }
+      .card { border-radius: 12px !important; }
+      .card-body { padding: 28px 24px !important; }
+      .card-footer { padding: 20px 24px 28px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;padding:40px 0;">
     <tr><td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
 
-        <!-- Header -->
+      <!-- Header -->
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" class="container" style="margin-bottom:20px;">
         <tr>
-          <td style="background:linear-gradient(135deg,#0066cc 0%%,#004999 100%%);padding:40px 48px;text-align:center;">
-            <img src="https://www.pixperk.tech/assets/avatar.jpg" alt="PixPerk" width="64" height="64" style="border-radius:50%%;border:3px solid rgba(255,255,255,0.3);margin-bottom:16px;" />
-            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;letter-spacing:-0.3px;">Hey, it's Yashaswi (aka PixPerk)</h1>
-            <p style="margin:8px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">One last step to join the newsletter</p>
+          <td style="padding:0 8px;text-align:left;" align="left">
+            <span style="font-size:15px;font-weight:600;color:#e0e0e0;letter-spacing:-0.3px;">pixperk</span>
+            <span style="font-size:15px;font-weight:300;color:#333;">&middot;</span>
+            <span style="font-size:13px;font-weight:400;color:#484848;">verify</span>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Card -->
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" class="container card" style="background-color:#111111;border:1px solid rgba(255,255,255,0.06);border-radius:14px;overflow:hidden;">
+
+        <!-- Avatar + Greeting -->
+        <tr>
+          <td class="card-body" style="padding:40px 40px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <tr>
+                <td style="vertical-align:middle;width:48px;" width="48" valign="middle">
+                  <img src="https://www.pixperk.tech/assets/avatar.jpg" alt="PixPerk" width="44" height="44" style="border-radius:50%%;border:1px solid rgba(255,255,255,0.08);display:block;" />
+                </td>
+                <td style="vertical-align:middle;padding-left:14px;" valign="middle">
+                  <span style="font-size:16px;font-weight:600;color:#ececec;letter-spacing:-0.3px;">hey, it's yashaswi</span><br/>
+                  <span style="font-size:13px;color:#555;">one last step to join the newsletter</span>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 
         <!-- Body -->
         <tr>
-          <td style="padding:40px 48px;">
-            <p style="margin:0 0 20px;color:#333;font-size:16px;line-height:1.6;">Hi there! 👋</p>
-            <p style="margin:0 0 28px;color:#555;font-size:15px;line-height:1.7;">
-              Thanks for subscribing to the <strong style="color:#333;">PixPerk</strong> newsletter. Click the button below to verify your email and start receiving updates on backend engineering, dev insights, and more.
+          <td class="card-body" style="padding:0 40px 36px;">
+            <p style="margin:0 0 20px;color:#9a9a9a;font-size:15px;line-height:1.75;">
+              thanks for subscribing to the <strong style="color:#d4d4d4;">pixperk</strong> newsletter. click below to verify your email and start receiving updates on backend engineering, dev insights, and more.
             </p>
 
             <!-- CTA Button -->
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
               <tr>
-                <td style="border-radius:8px;background-color:#0066cc;">
-                  <a href="%s" target="_blank" style="display:inline-block;padding:14px 36px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.3px;">
+                <td style="border-radius:8px;background-color:#e0e0e0;">
+                  <a href="%s" target="_blank" style="display:inline-block;padding:12px 32px;color:#0a0a0a;font-size:14px;font-weight:600;text-decoration:none;letter-spacing:0.2px;">
                     Verify Email Address
                   </a>
                 </td>
               </tr>
             </table>
 
-            <p style="margin:0 0 8px;color:#888;font-size:13px;line-height:1.6;text-align:center;">This link expires in 24 hours.</p>
-            <p style="margin:0;color:#888;font-size:13px;line-height:1.6;text-align:center;">If you didn't request this, you can safely ignore this email.</p>
+            <p style="margin:0 0 6px;color:#555;font-size:12px;line-height:1.6;text-align:center;">This link expires in 24 hours.</p>
+            <p style="margin:0;color:#444;font-size:12px;line-height:1.6;text-align:center;">If you didn't request this, you can safely ignore this email.</p>
           </td>
         </tr>
 
         <!-- Divider -->
-        <tr><td style="padding:0 48px;"><hr style="border:none;border-top:1px solid #eee;margin:0;" /></td></tr>
+        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:0;" /></td></tr>
 
         <!-- Footer -->
         <tr>
-          <td style="padding:28px 48px 36px;text-align:center;">
-            <p style="margin:0 0 6px;color:#333;font-size:14px;font-weight:600;">Yashaswi</p>
-            <p style="margin:0 0 16px;color:#888;font-size:13px;">Backend Developer &middot; <a href="https://www.pixperk.tech" target="_blank" style="color:#0066cc;text-decoration:none;">pixperk.tech</a></p>
-            <p style="margin:0;color:#bbb;font-size:11px;">&copy; 2025 Yashaswi &mdash; All bytes reserved.</p>
+          <td class="card-footer" style="padding:24px 40px 32px;text-align:center;">
+            <p style="margin:0 0 4px;color:#d4d4d4;font-size:13px;font-weight:600;">Yashaswi</p>
+            <p style="margin:0 0 14px;color:#555;font-size:12px;">Backend Developer &middot; <a href="https://www.pixperk.tech" target="_blank" style="color:#999;text-decoration:none;">pixperk.tech</a></p>
+            <p style="margin:0;color:#333;font-size:11px;">&copy; %s Yashaswi &mdash; All bytes reserved.</p>
           </td>
         </tr>
 
@@ -143,7 +176,7 @@ func VerifySubscribeHandler(w http.ResponseWriter, r *http.Request) {
     </td></tr>
   </table>
 </body>
-</html>`, verificationURL)
+</html>`, verificationURL, year)
 
 	if err := utils.SendEmail(email, emailSubject, htmlBody); err != nil {
 		SendJSON(w, http.StatusInternalServerError, JSONResponse{Error: "Failed to send verification email: " + err.Error()})

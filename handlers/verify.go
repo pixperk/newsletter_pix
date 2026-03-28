@@ -6,12 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	database "github.com/pixperk/newsletter/db"
-	"github.com/pixperk/newsletter/utils"
 )
 
 type VerifySubscribeRequest struct {
@@ -87,32 +85,64 @@ func VerifySubscribeHandler(w http.ResponseWriter, r *http.Request) {
 	verificationURL := fmt.Sprintf("https://pixperk.tech?verify=%s", token)
 
 	emailSubject := "Verify your newsletter subscription"
-	emailBody := fmt.Sprintf(`
-# Email Verification Required
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
 
-Hi there! 👋
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#0066cc 0%%,#004999 100%%);padding:40px 48px;text-align:center;">
+            <img src="https://www.pixperk.tech/assets/avatar.jpg" alt="PixPerk" width="64" height="64" style="border-radius:50%%;border:3px solid rgba(255,255,255,0.3);margin-bottom:16px;" />
+            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;letter-spacing:-0.3px;">Hey, it's Yashaswi (aka PixPerk)</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">One last step to join the newsletter</p>
+          </td>
+        </tr>
 
-Thanks for subscribing to the PixPerk newsletter. To complete your subscription, please click the link below to verify your email address:
+        <!-- Body -->
+        <tr>
+          <td style="padding:40px 48px;">
+            <p style="margin:0 0 20px;color:#333;font-size:16px;line-height:1.6;">Hi there! 👋</p>
+            <p style="margin:0 0 28px;color:#555;font-size:15px;line-height:1.7;">
+              Thanks for subscribing to the <strong style="color:#333;">PixPerk</strong> newsletter. Click the button below to verify your email and start receiving updates on backend engineering, dev insights, and more.
+            </p>
 
-**[Verify Email Address](%s)**
+            <!-- CTA Button -->
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
+              <tr>
+                <td style="border-radius:8px;background-color:#0066cc;">
+                  <a href="%s" target="_blank" style="display:inline-block;padding:14px 36px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.3px;">
+                    Verify Email Address
+                  </a>
+                </td>
+              </tr>
+            </table>
 
-This link will expire in 24 hours. If you didn't request this subscription, you can safely ignore this email.
+            <p style="margin:0 0 8px;color:#888;font-size:13px;line-height:1.6;text-align:center;">This link expires in 24 hours.</p>
+            <p style="margin:0;color:#888;font-size:13px;line-height:1.6;text-align:center;">If you didn't request this, you can safely ignore this email.</p>
+          </td>
+        </tr>
 
----
+        <!-- Divider -->
+        <tr><td style="padding:0 48px;"><hr style="border:none;border-top:1px solid #eee;margin:0;" /></td></tr>
 
-Best regards,
-**yashaswi.**
-`, verificationURL)
+        <!-- Footer -->
+        <tr>
+          <td style="padding:28px 48px 36px;text-align:center;">
+            <p style="margin:0 0 6px;color:#333;font-size:14px;font-weight:600;">Yashaswi</p>
+            <p style="margin:0 0 16px;color:#888;font-size:13px;">Backend Developer &middot; <a href="https://www.pixperk.tech" target="_blank" style="color:#0066cc;text-decoration:none;">pixperk.tech</a></p>
+            <p style="margin:0;color:#bbb;font-size:11px;">&copy; 2025 Yashaswi &mdash; All bytes reserved.</p>
+          </td>
+        </tr>
 
-	htmlBody := utils.MarkdownToHTML(emailBody)
-
-	footerHTML := ""
-	if f, err := os.ReadFile("footer.md"); err == nil {
-		footerHTML = utils.MarkdownToHTML(string(f))
-	}
-	if footerHTML != "" {
-		htmlBody += "<br>" + footerHTML
-	}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`, verificationURL)
 
 	if err := utils.SendEmail(email, emailSubject, htmlBody); err != nil {
 		SendJSON(w, http.StatusInternalServerError, JSONResponse{Error: "Failed to send verification email: " + err.Error()})
